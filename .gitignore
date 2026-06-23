@@ -1,2 +1,17 @@
 # Ignore CSV datasets
 *.csv
+
+# Mac
+/bin
+/etc
+/lib
+/share
+/include
+
+# Windows
+/Include
+/Lib
+/Scripts
+
+# All
+pyvenv.cfg
