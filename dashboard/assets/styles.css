@@ -1,0 +1,74 @@
+:root {
+  --bg: #f4f1eb;
+  --card: #fffdf8;
+  --ink: #1f2a37;
+  --muted: #5b6470;
+  --accent: #a33b20;
+  --border: #e3dacc;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 20% 0%, #f8f5ef 0%, var(--bg) 60%);
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.page-title {
+  margin-bottom: 6px;
+  letter-spacing: 0.4px;
+}
+
+.page-subtitle {
+  margin-top: 0;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0 20px 0;
+}
+
+.kpi-card {
+  background: linear-gradient(180deg, #fff, var(--card));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.kpi-title {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.kpi-value {
+  font-size: 28px;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .kpi-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
