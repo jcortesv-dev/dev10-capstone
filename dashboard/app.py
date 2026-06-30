@@ -36,6 +36,52 @@ def load_view(engine, view_name: str) -> pd.DataFrame:
     return pd.read_sql(query, engine)
 
 
+def load_character_numeric(engine) -> pd.DataFrame:
+    query = """
+        select
+            total_level,
+            hp,
+            str,
+            dex,
+            con,
+            "int" as int_stat,
+            wis,
+            cha,
+            notes_len
+        from characters.character
+        """
+    return pd.read_sql(query, engine)
+
+
+def load_multiclass_rate_by_class(engine) -> pd.DataFrame:
+    query = """
+    with class_counts as (
+        select
+            char_id,
+            count(distinct class) as class_count
+        from characters.character_class
+        group by char_id
+    ),
+    class_membership as (
+        select distinct
+            cc.char_id,
+            cc.class,
+            case when cnt.class_count > 1 then 1 else 0 end as is_multiclass
+        from characters.character_class cc
+        join class_counts cnt on cnt.char_id = cc.char_id
+    )
+    select
+        class,
+        count(*) as characters_with_class,
+        sum(is_multiclass) as multiclass_characters,
+        round(100.0 * sum(is_multiclass)::numeric / nullif(count(*), 0), 2) as multiclass_rate_pct
+    from class_membership
+    group by class
+    order by multiclass_rate_pct desc, characters_with_class desc
+    """
+    return pd.read_sql(query, engine)
+
+
 def kpi_card(title: str, value: str) -> html.Div:
     return html.Div(
         className="kpi-card",
@@ -46,8 +92,12 @@ def kpi_card(title: str, value: str) -> html.Div:
     )
 
 
-def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame) -> html.Div:
+def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame, race_df: pd.DataFrame) -> html.Div:
     k = kpis_df.iloc[0]
+    top_race_row = race_df.sort_values("character_count", ascending=False).iloc[0]
+    top_race = str(top_race_row["race"])
+    top_race_count = int(top_race_row["character_count"])
+
     kpi_row = html.Div(
         className="kpi-row",
         children=[
@@ -55,6 +105,7 @@ def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame) -> html.Div:
             kpi_card("Multiclass Characters", f"{int(k['multiclass_characters']):,}"),
             kpi_card("Level 20 Characters", f"{int(k['level_20_characters']):,}"),
             kpi_card("Average Level", f"{float(k['avg_total_level']):.2f}"),
+            kpi_card("Top Race", f"{top_race} ({top_race_count:,})"),
         ],
     )
 
@@ -75,7 +126,7 @@ def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame) -> html.Div:
             html.Div(
                 className="chart-grid",
                 children=[
-                    dcc.Graph(figure=class_fig),
+                    html.Div(className="chart-card", children=[dcc.Graph(figure=class_fig, config={"displayModeBar": False})]),
                 ],
             ),
         ]
@@ -104,13 +155,15 @@ def render_stats(maxed_df: pd.DataFrame, dump_df: pd.DataFrame) -> html.Div:
     return html.Div(
         className="chart-grid",
         children=[
-            dcc.Graph(figure=maxed_fig),
-            dcc.Graph(figure=dump_fig),
+            html.Div(className="chart-card", children=[dcc.Graph(figure=maxed_fig, config={"displayModeBar": False})]),
+            html.Div(className="chart-card", children=[dcc.Graph(figure=dump_fig, config={"displayModeBar": False})]),
         ],
     )
 
 
-def render_classes(subclass_df: pd.DataFrame, notes_df: pd.DataFrame) -> html.Div:
+def render_classes(subclass_df: pd.DataFrame, notes_df: pd.DataFrame, multiclass_df: pd.DataFrame) -> html.Div:
+    excluded_pattern = r"artificer|blood hunter"
+
     subclass_fig = px.bar(
         subclass_df.sort_values("subclass_count", ascending=False).head(20),
         x="subclass_count",
@@ -122,8 +175,11 @@ def render_classes(subclass_df: pd.DataFrame, notes_df: pd.DataFrame) -> html.Di
     )
     subclass_fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20), yaxis=dict(autorange="reversed"))
 
+    notes_filtered = notes_df.loc[
+        ~notes_df["class"].str.contains(excluded_pattern, case=False, na=False)
+    ]
     notes_fig = px.bar(
-        notes_df.sort_values("avg_notes_len", ascending=False),
+        notes_filtered.sort_values("avg_notes_len", ascending=False),
         x="class",
         y="avg_notes_len",
         title="Average Notes Length By Class",
@@ -131,11 +187,25 @@ def render_classes(subclass_df: pd.DataFrame, notes_df: pd.DataFrame) -> html.Di
     )
     notes_fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20), xaxis_tickangle=-30)
 
+    multiclass_filtered = multiclass_df.loc[
+        ~multiclass_df["class"].str.contains(excluded_pattern, case=False, na=False)
+    ]
+    multiclass_fig = px.bar(
+        multiclass_filtered,
+        x="multiclass_rate_pct",
+        y="class",
+        orientation="h",
+        title="Multiclass Rate By Class",
+        labels={"multiclass_rate_pct": "Multiclass Rate (%)", "class": "Class"},
+    )
+    multiclass_fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20), yaxis=dict(autorange="reversed"))
+
     return html.Div(
         className="chart-grid",
         children=[
-            dcc.Graph(figure=subclass_fig),
-            dcc.Graph(figure=notes_fig),
+            html.Div(className="chart-card", children=[dcc.Graph(figure=subclass_fig, config={"displayModeBar": False})]),
+            html.Div(className="chart-card", children=[dcc.Graph(figure=notes_fig, config={"displayModeBar": False})]),
+            html.Div(className="chart-card", children=[dcc.Graph(figure=multiclass_fig, config={"displayModeBar": False})]),
         ],
     )
 
@@ -156,6 +226,7 @@ def render_data_explorer(class_df: pd.DataFrame, notes_df: pd.DataFrame) -> html
     table_df = pd.concat([combined, notes_table], ignore_index=True)
 
     return html.Div(
+        className="table-wrap",
         children=[
             html.H3("Data Explorer"),
             dash_table.DataTable(
@@ -165,8 +236,54 @@ def render_data_explorer(class_df: pd.DataFrame, notes_df: pd.DataFrame) -> html
                 sort_action="native",
                 filter_action="native",
                 style_table={"overflowX": "auto"},
+                style_header={
+                    "backgroundColor": "#f3eee4",
+                    "fontWeight": "700",
+                    "border": "1px solid #ddd3c4",
+                },
+                style_cell={
+                    "padding": "10px",
+                    "border": "1px solid #eee6d9",
+                    "fontFamily": "Georgia, 'Times New Roman', serif",
+                    "fontSize": "14px",
+                },
+                style_data_conditional=[
+                    {
+                        "if": {"row_index": "odd"},
+                        "backgroundColor": "#fffdf9",
+                    }
+                ],
             ),
         ]
+    )
+
+
+def render_correlation_matrix(numeric_df: pd.DataFrame) -> html.Div:
+    corr = numeric_df.corr(numeric_only=True).round(2)
+    corr = corr.rename(
+        columns={"int_stat": "int"},
+        index={"int_stat": "int"},
+    )
+
+    fig = px.imshow(
+        corr,
+        text_auto=True,
+        color_continuous_scale="RdBu",
+        zmin=-1,
+        zmax=1,
+        aspect="auto",
+        title="Correlation Matrix (Numeric Character Fields)",
+    )
+    fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20))
+
+    return html.Div(
+        className="chart-grid",
+        children=[
+            html.Div(
+                className="chart-card full-width",
+                children=[dcc.Graph(figure=fig, config={"displayModeBar": False})],
+            ),
+        ],
     )
 
 
@@ -180,6 +297,9 @@ def build_app() -> Dash:
     dump_df = load_view(engine, "vw_dump_stats")
     subclass_df = load_view(engine, "vw_top_subclass_per_class")
     notes_df = load_view(engine, "vw_class_notes_summary")
+    race_df = load_view(engine, "vw_race_popularity")
+    numeric_df = load_character_numeric(engine)
+    multiclass_df = load_multiclass_rate_by_class(engine)
 
     app = Dash(__name__)
     app.title = "DND Character Dashboard"
@@ -193,11 +313,13 @@ def build_app() -> Dash:
                 className="page-subtitle",
             ),
             dcc.Tabs(
+                className="tabs-shell",
                 children=[
-                    dcc.Tab(label="Overview", children=render_overview(kpis_df, class_df)),
-                    dcc.Tab(label="Stats", children=render_stats(maxed_df, dump_df)),
-                    dcc.Tab(label="Classes", children=render_classes(subclass_df, notes_df)),
-                    dcc.Tab(label="Explorer", children=render_data_explorer(class_df, notes_df)),
+                    dcc.Tab(label="Overview", className="tab", selected_className="tab--selected", children=render_overview(kpis_df, class_df, race_df)),
+                    dcc.Tab(label="Stats", className="tab", selected_className="tab--selected", children=render_stats(maxed_df, dump_df)),
+                    # dcc.Tab(label="Correlation", className="tab", selected_className="tab--selected", children=render_correlation_matrix(numeric_df)),
+                    dcc.Tab(label="Classes", className="tab", selected_className="tab--selected", children=render_classes(subclass_df, notes_df, multiclass_df)),
+                    dcc.Tab(label="Explorer", className="tab", selected_className="tab--selected", children=render_data_explorer(class_df, notes_df)),
                 ]
             ),
         ],

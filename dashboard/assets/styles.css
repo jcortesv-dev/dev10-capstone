@@ -4,6 +4,7 @@
   --ink: #1f2a37;
   --muted: #5b6470;
   --accent: #a33b20;
+  --accent-soft: #f3e4da;
   --border: #e3dacc;
 }
 
@@ -17,53 +18,112 @@ body {
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 26px;
 }
 
 .page-title {
+  font-size: 40px;
   margin-bottom: 6px;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
 }
 
 .page-subtitle {
   margin-top: 0;
   color: var(--muted);
-  margin-bottom: 18px;
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.tabs-shell {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tab {
+  background: #f7f1e7;
+  border-right: 1px solid #e4d8c7 !important;
+  color: #6a3b2d !important;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.tab--selected {
+  background: #fff !important;
+  color: var(--ink) !important;
+  border-bottom: 3px solid var(--accent) !important;
 }
 
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
-  gap: 12px;
-  margin: 12px 0 20px 0;
+  gap: 14px;
+  margin: 16px;
 }
 
 .kpi-card {
-  background: linear-gradient(180deg, #fff, var(--card));
+  background: linear-gradient(165deg, #fff, var(--card));
   border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
-  padding: 14px;
+  border-left: 5px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 16px rgba(47, 39, 28, 0.06);
 }
 
 .kpi-title {
-  font-size: 13px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   color: var(--muted);
 }
 
 .kpi-value {
-  font-size: 28px;
-  margin-top: 4px;
+  font-size: 30px;
+  margin-top: 6px;
   font-weight: 700;
 }
 
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+.chart-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(48, 41, 33, 0.06);
+  padding: 6px;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.table-wrap {
+  margin: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 20px rgba(48, 41, 33, 0.06);
+}
+
+.table-wrap h3 {
+  margin-top: 4px;
+  margin-bottom: 12px;
+  color: #3c2f2b;
 }
 
 @media (max-width: 900px) {
+  .page-title {
+    font-size: 32px;
+  }
+
   .kpi-row {
     grid-template-columns: 1fr 1fr;
   }
