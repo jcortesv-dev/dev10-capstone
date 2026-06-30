@@ -94,9 +94,6 @@ def kpi_card(title: str, value: str) -> html.Div:
 
 def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame, race_df: pd.DataFrame) -> html.Div:
     k = kpis_df.iloc[0]
-    top_race_row = race_df.sort_values("character_count", ascending=False).iloc[0]
-    top_race = str(top_race_row["race"])
-    top_race_count = int(top_race_row["character_count"])
 
     kpi_row = html.Div(
         className="kpi-row",
@@ -105,7 +102,6 @@ def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame, race_df: pd.D
             kpi_card("Multiclass Characters", f"{int(k['multiclass_characters']):,}"),
             kpi_card("Level 20 Characters", f"{int(k['level_20_characters']):,}"),
             kpi_card("Average Level", f"{float(k['avg_total_level']):.2f}"),
-            kpi_card("Top Race", f"{top_race} ({top_race_count:,})"),
         ],
     )
 
@@ -120,6 +116,17 @@ def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame, race_df: pd.D
     )
     class_fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20), yaxis=dict(autorange="reversed"))
 
+    race_top = race_df.sort_values("character_count", ascending=False).head(15)
+    race_fig = px.bar(
+        race_top,
+        x="character_count",
+        y="race",
+        orientation="h",
+        title="Top Races",
+        labels={"character_count": "Characters", "race": "Race"},
+    )
+    race_fig.update_layout(template="plotly_white", margin=dict(l=20, r=20, t=60, b=20), yaxis=dict(autorange="reversed"))
+
     return html.Div(
         children=[
             kpi_row,
@@ -127,6 +134,7 @@ def render_overview(kpis_df: pd.DataFrame, class_df: pd.DataFrame, race_df: pd.D
                 className="chart-grid",
                 children=[
                     html.Div(className="chart-card", children=[dcc.Graph(figure=class_fig, config={"displayModeBar": False})]),
+                    html.Div(className="chart-card", children=[dcc.Graph(figure=race_fig, config={"displayModeBar": False})]),
                 ],
             ),
         ]

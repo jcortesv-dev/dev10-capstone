@@ -1,23 +1,46 @@
-# dev10-capstone
+# DnD Character Analytics Project
 
-## Project Planning
+## Project Summary
+This project analyzes DnD Beyond character data using a Python ETL pipeline, PostgreSQL, and a Dash dashboard.
 
-# Questions I hope to answer:
-1. What's the most played class?
-2. What's the most played race?
-3. How many characters multiclass?
-4. How many characters actually get to level 20?
-5. Most popular stat to max?
-6. Most popular dump stat?
-7. Any correlation between classes and note taking length?
-8. If possible, most popular subclass per class?
+## Questions Answered
+1. Most played class
+2. Most played race
+3. Number of multiclass characters
+4. Number of level 20 characters
+5. Most popular stat to max
+6. Most popular dump stat
+7. Notes length by class
+8. Most popular subclass per class
 
-# The Database:
-The schema is currently in characters.sql.
+## ERD
+![Schema ERD](erd.png)
 
-# Things to clean:
-- Null values
-- Characters with "('s character)" in it (Characters that weren't made)
-- Make sure which things from the secondary dataset will be joined into the dataframe
-- Make sure that names match up (stats, name columns)
+## Data Cleaning
+1. Removed null or unusable values
+2. Removed non-character rows (example: names containing ('s character))
+3. Standardized names and stat columns
 
+## Main Files
+1. work-dir/main.py: runs ETL and loads PostgreSQL
+2. sql/characters.sql: creates schema and tables
+3. sql/dashboard_views.sql: creates reporting views
+4. sql/analysis_questions.sql: analysis SQL
+5. dashboard/app.py: Dash dashboard
+
+## Setup
+Create a .env file in the project root with database values: DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_DATABASE (and optional DB_SCHEMA).
+
+## Run
+1. Run schema SQL:
+   - sql/characters.sql
+   - sql/dashboard_views.sql
+2. Run ETL:
+   - python work-dir/main.py
+3. Run dashboard:
+   - python dashboard/app.py
+
+## Tools Used
+1. Python (pandas, psycopg, SQLAlchemy, Dynaconf)
+2. PostgreSQL
+3. Dash/Plotly
