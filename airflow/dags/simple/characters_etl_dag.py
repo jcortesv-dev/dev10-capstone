@@ -9,12 +9,19 @@ from airflow.sdk import dag, task
     start_date=pendulum.datetime(2026, 1, 1, tz="UTC"),
     catchup=False,
     tags=["capstone", "postgres"],
+    template_searchpath=["/opt/airflow/project/sql"],
 )
 def characters_etl_dag():
     schema_task = SQLExecuteQueryOperator(
         task_id="create_schema",
         conn_id="pg_conn",
         sql="characters.sql",
+    )
+
+    views_task = SQLExecuteQueryOperator(
+        task_id="create_dashboard_views",
+        conn_id="pg_conn",
+        sql="dashboard_views.sql",
     )
 
     @task()
@@ -51,7 +58,7 @@ def characters_etl_dag():
             schema="characters",
         )
 
-    schema_task >> etl()
+    schema_task >> views_task >> etl()
 
 
 characters_etl_dag()
