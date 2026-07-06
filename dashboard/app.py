@@ -218,20 +218,83 @@ def render_classes(subclass_df: pd.DataFrame, notes_df: pd.DataFrame, multiclass
     )
 
 
-def render_data_explorer(class_df: pd.DataFrame, notes_df: pd.DataFrame) -> html.Div:
-    combined = (
+def render_data_explorer(
+    class_df: pd.DataFrame,
+    notes_df: pd.DataFrame,
+    race_df: pd.DataFrame,
+    multiclass_df: pd.DataFrame,
+    maxed_df: pd.DataFrame,
+    dump_df: pd.DataFrame,
+    subclass_df: pd.DataFrame,
+) -> html.Div:
+    class_popularity = (
         class_df.rename(columns={"class": "category", "character_count": "count"})
         .assign(metric="class_popularity")
         .loc[:, ["metric", "category", "count"]]
     )
 
-    notes_table = (
+    race_popularity = (
+        race_df.rename(columns={"race": "category", "character_count": "count"})
+        .assign(metric="race_popularity")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    notes_sample_size = (
+        notes_df.rename(columns={"class": "category", "characters": "count"})
+        .assign(metric="notes_sample_size_by_class")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    notes_average = (
         notes_df.rename(columns={"class": "category", "avg_notes_len": "count"})
         .assign(metric="avg_notes_len_by_class")
         .loc[:, ["metric", "category", "count"]]
     )
 
-    table_df = pd.concat([combined, notes_table], ignore_index=True)
+    multiclass_characters = (
+        multiclass_df.rename(columns={"class": "category", "multiclass_characters": "count"})
+        .assign(metric="multiclass_characters_by_class")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    class_membership_size = (
+        multiclass_df.rename(columns={"class": "category", "characters_with_class": "count"})
+        .assign(metric="characters_with_class")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    maxed_stats = (
+        maxed_df.rename(columns={"stat_name": "category", "maxed_count": "count"})
+        .assign(metric="maxed_stat_count")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    dump_stats = (
+        dump_df.rename(columns={"stat_name": "category", "dump_count": "count"})
+        .assign(metric="dump_stat_count")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    top_subclass_counts = (
+        subclass_df.rename(columns={"class": "category", "subclass_count": "count"})
+        .assign(metric="top_subclass_count")
+        .loc[:, ["metric", "category", "count"]]
+    )
+
+    table_df = pd.concat(
+        [
+            class_popularity,
+            race_popularity,
+            notes_sample_size,
+            notes_average,
+            multiclass_characters,
+            class_membership_size,
+            maxed_stats,
+            dump_stats,
+            top_subclass_counts,
+        ],
+        ignore_index=True,
+    )
 
     return html.Div(
         className="table-wrap",
@@ -316,10 +379,6 @@ def build_app() -> Dash:
         className="page",
         children=[
             html.H1("DND Character Insights", className="page-title"),
-            html.P(
-                "Dashboard built from the characters schema and view layer.",
-                className="page-subtitle",
-            ),
             dcc.Tabs(
                 className="tabs-shell",
                 children=[
@@ -327,7 +386,20 @@ def build_app() -> Dash:
                     dcc.Tab(label="Stats", className="tab", selected_className="tab--selected", children=render_stats(maxed_df, dump_df)),
                     # dcc.Tab(label="Correlation", className="tab", selected_className="tab--selected", children=render_correlation_matrix(numeric_df)),
                     dcc.Tab(label="Classes", className="tab", selected_className="tab--selected", children=render_classes(subclass_df, notes_df, multiclass_df)),
-                    dcc.Tab(label="Explorer", className="tab", selected_className="tab--selected", children=render_data_explorer(class_df, notes_df)),
+                    dcc.Tab(
+                        label="Explorer",
+                        className="tab",
+                        selected_className="tab--selected",
+                        children=render_data_explorer(
+                            class_df,
+                            notes_df,
+                            race_df,
+                            multiclass_df,
+                            maxed_df,
+                            dump_df,
+                            subclass_df,
+                        ),
+                    ),
                 ]
             ),
         ],
